@@ -27,7 +27,7 @@ class MainWindow(QMainWindow):
         self._tabs.setMovable(False)
 
         self._tabs.addTab(TimerTab(engine=self._engine), "Таймер")
-        self._tabs.addTab(HistoryTab(), "История")
+        self._tabs.addTab(HistoryTab(engine=self._engine), "История")
         self._tabs.addTab(SettingsTab(), "Настройки")
 
         self.setCentralWidget(self._tabs)

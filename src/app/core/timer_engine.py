@@ -74,6 +74,28 @@ class TimerEngine:
         self._last_tick_monotonic: Optional[float] = None
         self._tick_remainder: float = 0.0
 
+        # Подписчики на событие "сессия завершена и записана" (COMMIT 5).
+        # Движок остаётся независимым от PyQt: используем обычные колбэки.
+        self._on_stop_callbacks: list[Callable[[Session], None]] = []
+
+    def subscribe_on_stop(self, cb: Callable[[Session], None]) -> None:
+        """Подписаться на событие успешного stop().
+
+        Колбэк вызывается только если была активная сессия и она записана.
+
+        Args:
+            cb: функция вида (Session) -> None.
+        """
+        self._on_stop_callbacks.append(cb)
+
+    def unsubscribe_on_stop(self, cb: Callable[[Session], None]) -> None:
+        """Отписаться от события stop().
+
+        Args:
+            cb: ранее подписанный колбэк.
+        """
+        self._on_stop_callbacks = [x for x in self._on_stop_callbacks if x is not cb]
+
     @property
     def state(self) -> TimerState:
         """Текущее состояние таймера."""
@@ -179,6 +201,16 @@ class TimerEngine:
             duration_seconds=duration_seconds,
         )
         self._session_writer(s)
+
+        # Уведомляем подписчиков (best-effort, чтобы UI не падал из-за обработчика).
+        if self._on_stop_callbacks:
+            for cb in list(self._on_stop_callbacks):
+                try:
+                    cb(s)
+                except Exception:
+                    # Движок не логирует: не тащим logging в core.
+                    # Ошибка обработчика не должна ломать stop().
+                    continue
 
         self._state = TimerState.STOPPED
         self._active = None
