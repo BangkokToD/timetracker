@@ -19,6 +19,21 @@ from app.core.timer_engine import TimerEngine
 log = logging.getLogger(__name__)
 
 
+def round_to_step(value: float, step: int = 5) -> int:
+    """Округлить значение до ближайшего шага step.
+
+    Правило отображения:
+    0–2.5   → 0
+    2.5–7.5 → 5
+    7.5–12.5 → 10
+
+    Используется только в UI истории.
+    """
+    half = step / 2
+    return int(((value + half) // step) * step)
+
+
+
 class HistoryTab(QWidget):
     """Вкладка История по дням."""
 
@@ -103,7 +118,17 @@ class HistoryTab(QWidget):
             item_time = QTableWidgetItem(format_hhmmss(d.sum_seconds))
             item_time.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
 
-            item_money = QTableWidgetItem(format_money_usdt(d.money_day))
+            # COMMIT 6 — отображаем деньги шагом 5 USDT
+            money_display = round_to_step(d.money_day, step=5)
+
+            # UX: если значение 0 — показываем "—"
+            if money_display == 0:
+                money_text = "—"
+            else:
+                money_text = f"{money_display} USDT"
+
+            item_money = QTableWidgetItem(money_text)
+
             item_money.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
 
             self._table.setItem(row, 0, item_date)
