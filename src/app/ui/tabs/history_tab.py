@@ -13,6 +13,7 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
+from app.core.app_bus import AppBus
 from app.core.history_aggregator import aggregate_days, format_hhmmss, format_money_usdt
 from app.core.timer_engine import TimerEngine
 
@@ -33,13 +34,13 @@ def round_to_step(value: float, step: int = 5) -> int:
     return int(((value + half) // step) * step)
 
 
-
 class HistoryTab(QWidget):
     """Вкладка История по дням."""
 
-    def __init__(self, *, engine: TimerEngine) -> None:
+    def __init__(self, *, engine: TimerEngine, bus: AppBus) -> None:
         super().__init__()
         self._engine = engine
+        self._bus = bus
 
         self._table = QTableWidget(0, 4)
         self._table.setHorizontalHeaderLabels(["Дата", "Сессий", "Время", "Деньги"])
@@ -89,6 +90,8 @@ class HistoryTab(QWidget):
 
         # COMMIT 5: обновляем историю по событию stop() (сессия записана).
         self._engine.subscribe_on_stop(self._on_engine_stop)
+        # COMMIT 7: мгновенно обновляем историю после сохранения настроек (ставка).
+        self._bus.subscribe_on_settings_changed(self._on_settings_changed)
 
         # Первичная загрузка.
         self.refresh()
@@ -100,6 +103,10 @@ class HistoryTab(QWidget):
 
     def _on_engine_stop(self, _session) -> None:
         """Обновить таблицу после stop()."""
+        self.refresh()
+
+    def _on_settings_changed(self, _settings) -> None:
+        """Горячее применение ставки: сразу пересчитать деньги в истории."""
         self.refresh()
 
     def refresh(self) -> None:
@@ -143,6 +150,7 @@ class HistoryTab(QWidget):
         """Отписка от движка при закрытии виджета (best-effort)."""
         try:
             self._engine.unsubscribe_on_stop(self._on_engine_stop)
+            self._bus.unsubscribe_on_settings_changed(self._on_settings_changed)
         except Exception:
             pass
         super().closeEvent(event)

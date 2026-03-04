@@ -13,6 +13,7 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
+from app.core.app_bus import AppBus
 from app.core.state import TimerState
 from app.core.timer_engine import TimerEngine
 from app.storage.settings_repo import load_settings
@@ -22,9 +23,10 @@ from app.storage.sessions_repo import load_sessions
 class TimerTab(QWidget):
     """Вкладка Таймер: текущая сессия + итоги."""
 
-    def __init__(self, *, engine: TimerEngine) -> None:
+    def __init__(self, *, engine: TimerEngine, bus: AppBus) -> None:
         super().__init__()
         self._engine = engine
+        self._bus = bus
 
         self._lbl_session_time = QLabel("00:00:00")
         self._lbl_session_money = QLabel("0.00 USDT")
@@ -61,6 +63,9 @@ class TimerTab(QWidget):
         self._timer.setInterval(1000)
         self._timer.timeout.connect(self._on_tick)
         self._timer.start()
+
+        # COMMIT 7: мгновенно обновляем суммы после сохранения настроек.
+        self._bus.subscribe_on_settings_changed(self._on_settings_changed)
 
         # Первичная отрисовка.
         self._apply_fonts()
@@ -167,6 +172,10 @@ class TimerTab(QWidget):
         self._engine.stop()
         self._refresh_ui()
 
+    def _on_settings_changed(self, _settings) -> None:
+        """Горячее применение настроек: сразу пересчитать суммы на экране."""
+        self._refresh_ui()
+
     def _refresh_ui(self) -> None:
         """Обновить UI по текущему состоянию движка."""
         state = self._engine.state
@@ -253,3 +262,12 @@ def _money_from_seconds(seconds: int, hourly_rate: float) -> float:
         return 0.0
     value = (s / 3600.0) * rate
     return round(float(value), 2)
+
+
+    def closeEvent(self, event) -> None:  # type: ignore[override]
+        """Отписка от событий при закрытии (best-effort)."""
+        try:
+            self._bus.unsubscribe_on_settings_changed(self._on_settings_changed)
+        except Exception:
+            pass
+        super().closeEvent(event)
