@@ -42,3 +42,6 @@ Thumbs.db
 # Local app data (important for this project)
 # Таймтрекер будет хранить данные тут
 .local/
+
+# На всякий случай: артефакты editable install
+src/*.egg-info/

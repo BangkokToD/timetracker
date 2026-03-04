@@ -7,6 +7,7 @@ import logging
 from PyQt6.QtWidgets import QApplication
 
 from app.logging_config import setup_logging
+from app.storage.bootstrap import ensure_storage_initialized
 from app.ui.main_window import MainWindow
 
 log = logging.getLogger(__name__)
@@ -20,6 +21,10 @@ def main() -> int:
     """
     setup_logging()
     log.info("Starting timetracker...")
+
+    # COMMIT 2: гарантируем наличие JSON-хранилища с дефолтами на первом запуске.
+    # Если файлы повреждены/невалидны — поднимем понятную ошибку в логах.
+    ensure_storage_initialized()
 
     app = QApplication([])
     w = MainWindow()
