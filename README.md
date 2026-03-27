@@ -1,6 +1,6 @@
 # timetracker
 
-Linux time-tracker (GUI + tray) — MVP.
+Linux time-tracker (GUI) — MVP.
 
 ## Requirements
 - Python 3.12+
@@ -24,3 +24,9 @@ python -m app
 ```bash
 pytest
 ```
+## Close behavior
+
+- Если таймер не активен, окно закрывается сразу.
+- Если таймер в состоянии `RUNNING` или `PAUSED`, приложение показывает подтверждение.
+- При подтверждении текущая сессия завершается через обычный `stop()` и сохраняется.
+

@@ -27,8 +27,7 @@ def main() -> int:
     ensure_storage_initialized()
 
     app = QApplication([])
-    # COMMIT 8: приложение живёт в фоне, когда окно скрыто в трей.
-    app.setQuitOnLastWindowClosed(False)
+
     w = MainWindow()
     w.show()
 

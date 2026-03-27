@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "timetracker"
 version = "0.1.0"
-description = "Linux time tracker (GUI + tray) — MVP"
+description = "Linux time tracker (GUI) — MVP"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
